@@ -156,7 +156,7 @@ submission includes sanitized copies in `docs/proof/`.
 
 ---
 
-## Visual proof (screenshots / terminal recordings)
+## Visual proof (screenshots)
 
 Step-by-step instructions: **[`docs/API_PROOF.md`](docs/API_PROOF.md)**.
 
@@ -182,16 +182,6 @@ Committed proof screenshots in **`docs/proof/`**:
 ![Re-enrollment proof](docs/proof/05-reenrollment.png)
 
 ![Test suite proof](docs/proof/06-test-suite.png)
-
-Quick recording of the test suite:
-
-```bash
-# asciinema
-asciinema rec docs/proof/tests.cast -c "python manage.py test accounts.tests events.tests -v 2"
-
-# vhs (https://github.com/charmbracelet/vhs)
-vhs docs/proof/tests.tape
-```
 
 ---
 

@@ -1,4 +1,4 @@
-# API Proof — Screenshots & Terminal Recordings
+# API Proof — Screenshots
 
 Visual evidence for evaluators. All committed screenshots use the numbered naming
 scheme in `docs/proof/`.
@@ -62,31 +62,6 @@ python manage.py test accounts.tests events.tests -v 2
 
 ---
 
-## CLI test recording (asciinema)
-
-```bash
-cd events-platform
-source .venv/bin/activate
-mkdir -p docs/proof
-
-asciinema rec docs/proof/test_suite.cast \
-  -c "python manage.py test accounts.tests events.tests -v 2"
-
-asciinema rec docs/proof/chaos.cast -c "bash chaos/run_all.sh"
-```
-
----
-
-## VHS tape (GIF)
-
-Install [vhs](https://github.com/charmbracelet/vhs), then:
-
-```bash
-vhs docs/proof/tests.tape
-```
-
----
-
 ## OpenAPI schema snapshot
 
 ```bash
@@ -109,10 +84,6 @@ docs/proof/
   chaos_a_overbooking.log          # Chaos A overbooking
   chaos_b_unique_together.log      # Chaos B IntegrityError + fix
   partial_unique_syntax_error.log  # invalid ALTER … WHERE
-  tests.tape
-  test_suite.cast                  # optional asciinema
-  tests.gif                        # optional vhs GIF
-  chaos.cast                       # optional chaos recording
 ```
 
 Committed chaos logs and numbered screenshots ship with the repo/ZIP.

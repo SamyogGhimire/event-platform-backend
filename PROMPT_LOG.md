@@ -62,7 +62,7 @@ docs, Postman collection, and **live chaos experiments** to feed `DEBUGGING.md`.
 ### 5. Documentation & proof assets
 
 - `README.md`, `DECISIONS.md`, `DEBUGGING.md`, `PROMPT_LOG.md`
-- `docs/API_PROOF.md` (screenshot / asciinema / vhs instructions)
+- `docs/API_PROOF.md` (screenshot instructions)
 - `events_platform.postman_collection.json` with JWT capture scripts
 - Committed proof screenshots in `docs/proof/01-auth-flow.png` … `06-test-suite.png`
 

@@ -128,7 +128,7 @@ def build():
     pdf.bullet("events/ - Event + Enrollment models, search, enroll with DB locking")
     pdf.bullet("config/ - Django settings, URLs, standardized error format")
     pdf.bullet("chaos/ - scripts that deliberately break things (for DEBUGGING.md evidence)")
-    pdf.bullet("docs/ - API proof instructions (screenshots / recordings)")
+    pdf.bullet("docs/ - API proof instructions (screenshots)")
 
     # 2
     pdf.h1("2. Do I need to change .env?")
@@ -245,7 +245,7 @@ def build():
     pdf.bullet("4. Trigger capacity_full error (capacity=1 event, two seekers)")
     pdf.bullet("5. Run automated tests (below)")
     pdf.bullet("6. Optional: run chaos scripts and keep logs for DEBUGGING.md")
-    pdf.bullet("7. Optional: Postman screenshots + asciinema/vhs (see docs/API_PROOF.md)")
+    pdf.bullet("7. Optional: Postman screenshots (see docs/API_PROOF.md)")
 
     pdf.h3("Try in Swagger")
     pdf.body(
@@ -312,7 +312,7 @@ def build():
     pdf.bullet("DECISIONS.md - why locking / partial unique / OTP policy")
     pdf.bullet("DEBUGGING.md - real chaos failure traces")
     pdf.bullet("PROMPT_LOG.md - AI interaction log + corrections")
-    pdf.bullet("docs/API_PROOF.md - screenshot / recording instructions")
+    pdf.bullet("docs/API_PROOF.md - screenshot instructions")
 
     pdf.ln(8)
     pdf.ok("You are ready: start runserver -> open /api/docs/ -> login -> explore -> run tests.")

@@ -16,7 +16,5 @@ htmlcov/
 .mypy_cache/
 # Local re-run output only — committed evidence lives in docs/proof/
 chaos/artifacts/
-*.cast
-*.gif
 .idea/
 .vscode/
