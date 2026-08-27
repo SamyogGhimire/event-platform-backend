@@ -1,0 +1,352 @@
+{
+  "info": {
+    "name": "Events Platform API",
+    "description": "Complete collection for auth, events, enrollment, cancellation, and re-enrollment flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "eventId", "value": "1" },
+    { "key": "seekerEmail", "value": "seeker1@example.com" },
+    { "key": "facilitatorEmail", "value": "facilitator@example.com" },
+    { "key": "password", "value": "Passw0rd!" },
+    { "key": "otpCode", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup (Seeker)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newseeker@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"role\": \"Seeker\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/signup/"
+          }
+        },
+        {
+          "name": "Signup (Facilitator)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newfac@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"role\": \"Facilitator\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/signup/"
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newseeker@example.com\",\n  \"otp\": \"{{otpCode}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/verify-otp/"
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newseeker@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/resend-otp/"
+          }
+        },
+        {
+          "name": "Login (Seeker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.access);",
+                  "  pm.collectionVariables.set('refreshToken', data.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{seekerEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login/"
+          }
+        },
+        {
+          "name": "Login (Facilitator)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.access);",
+                  "  pm.collectionVariables.set('refreshToken', data.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{facilitatorEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login/"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/token/refresh/"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/me/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Facilitator Events",
+      "item": [
+        {
+          "name": "Create Event",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + pm.collectionVariables.get('accessToken') });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('eventId', String(pm.response.json().id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DRF Concurrency Lab\",\n  \"description\": \"Hands-on locking workshop\",\n  \"language\": \"English\",\n  \"location\": \"Kathmandu\",\n  \"starts_at\": \"2026-09-15T10:00:00Z\",\n  \"ends_at\": \"2026-09-15T12:00:00Z\",\n  \"capacity\": 10\n}"
+            },
+            "url": "{{baseUrl}}/api/facilitator/events/"
+          }
+        },
+        {
+          "name": "List My Events (with available_seats)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + pm.collectionVariables.get('accessToken') });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/facilitator/events/"
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 12\n}"
+            },
+            "url": "{{baseUrl}}/api/facilitator/events/{{eventId}}/"
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/facilitator/events/{{eventId}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Event Search",
+      "item": [
+        {
+          "name": "Search Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/?q=Django&location=Kathmandu&language=English&starts_after=2026-01-01T00:00:00Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", ""],
+              "query": [
+                { "key": "q", "value": "Django" },
+                { "key": "location", "value": "Kathmandu" },
+                { "key": "language", "value": "English" },
+                { "key": "starts_after", "value": "2026-01-01T00:00:00Z" },
+                { "key": "starts_before", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Event Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/events/{{eventId}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enrollments",
+      "item": [
+        {
+          "name": "Enroll",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/events/{{eventId}}/enroll/"
+          }
+        },
+        {
+          "name": "Cancel Enrollment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/events/{{eventId}}/cancel/"
+          }
+        },
+        {
+          "name": "Re-enroll",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/events/{{eventId}}/enroll/"
+          }
+        },
+        {
+          "name": "My Enrollments (upcoming)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/enrollments/me/?scope=upcoming"
+          }
+        },
+        {
+          "name": "My Enrollments (past)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/enrollments/me/?scope=past"
+          }
+        },
+        {
+          "name": "Capacity Full Error (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/events/{{eventId}}/enroll/",
+            "description": "Use an event with capacity=1 that is already full. Expect: {\"detail\":\"Event capacity full.\",\"code\":\"capacity_full\"}"
+          }
+        }
+      ]
+    }
+  ]
+}
