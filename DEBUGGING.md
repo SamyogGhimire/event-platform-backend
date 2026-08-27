@@ -1,7 +1,11 @@
 # DEBUGGING.md
 
 Authentic failure records from live chaos experiments against PostgreSQL.
-Scripts live in `chaos/`; raw logs in `chaos/artifacts/`.
+
+- Scripts: `chaos/`
+- **Committed evidence (included in the repo/ZIP):** `docs/proof/*.log`
+- Local re-run output (gitignored): `chaos/artifacts/` — regenerate anytime with
+  `python chaos/chaos_a_concurrency.py` / `python chaos/chaos_b_unique_together.py`
 
 ---
 
@@ -12,15 +16,16 @@ Scripts live in `chaos/`; raw logs in `chaos/artifacts/`.
 With `capacity=1`, five seekers enrolled simultaneously. After the race settled, the
 database held **5 active `ENROLLED` rows** for a single event.
 
-Captured from `chaos/artifacts/chaos_a_overbooking.log` (2026-08-27):
+Captured from [`docs/proof/chaos_a_overbooking.log`](docs/proof/chaos_a_overbooking.log)
+(2026-08-27):
 
 ```text
-Created event id=4 capacity=1
-[THREAD OK] seeker_id=11 enrollment_id=1
-[THREAD OK] seeker_id=10 enrollment_id=3
-[THREAD OK] seeker_id=12 enrollment_id=2
-[THREAD OK] seeker_id=8 enrollment_id=4
-[THREAD OK] seeker_id=9 enrollment_id=5
+Created event id=7 capacity=1
+[THREAD OK] seeker_id=8 enrollment_id=12
+[THREAD OK] seeker_id=10 enrollment_id=13
+[THREAD OK] seeker_id=11 enrollment_id=15
+[THREAD OK] seeker_id=12 enrollment_id=14
+[THREAD OK] seeker_id=9 enrollment_id=16
 FINAL active ENROLLED count = 5 (capacity was 1)
 *** OVERBOOKING CONFIRMED — race condition reproduced ***
 ```
@@ -83,6 +88,8 @@ test_parallel_enrollment_never_exceeds_capacity ... ok
 # capacity=10 with 9 prefilled + 5 racers → exactly 10 ENROLLED, 4× capacity_full
 ```
 
+![Enrollment capacity — standardized capacity_full error](docs/proof/04-enrollment-capacity.png)
+
 ---
 
 ## Issue 2 — Partial unique index DDL syntax + naive `unique_together` blocking re-enrollment
@@ -93,17 +100,17 @@ With a naive `UNIQUE (event_id, seeker_id)` (no status predicate), the lifecycle
 **Enroll → Cancel → Re-enroll** crashed:
 
 ```text
-STEP 1 ENROLLED enrollment_id=9 status=ENROLLED
-STEP 2 CANCELLED enrollment_id=9 status=CANCELLED
+STEP 1 ENROLLED enrollment_id=17 status=ENROLLED
+STEP 2 CANCELLED enrollment_id=17 status=CANCELLED
 STEP 3 RE-ENROLL — inserting new ENROLLED row…
 django.db.utils.IntegrityError: duplicate key value violates unique constraint
   "chaos_naive_unique_event_seeker"
-DETAIL:  Key (event_id, seeker_id)=(6, 14) already exists.
-DB rows for (event, seeker): [{'id': 9, 'status': 'CANCELLED', ...}]
+DETAIL:  Key (event_id, seeker_id)=(8, 14) already exists.
+DB rows for (event, seeker): [{'id': 17, 'status': 'CANCELLED', ...}]
 ```
 
-Source: `chaos/artifacts/chaos_b_unique_together.log` via
-`python chaos/chaos_b_unique_together.py`.
+Source: [`docs/proof/chaos_b_unique_together.log`](docs/proof/chaos_b_unique_together.log)
+via `python chaos/chaos_b_unique_together.py`.
 
 ### Symptom B — Wrong PostgreSQL DDL for partial uniqueness
 
@@ -115,7 +122,7 @@ ADD CONSTRAINT ... UNIQUE (event_id, seeker_id)
 WHERE (status = 'ENROLLED');
 ```
 
-Captured error (`chaos/artifacts/partial_unique_syntax_error.log`):
+Captured error ([`docs/proof/partial_unique_syntax_error.log`](docs/proof/partial_unique_syntax_error.log)):
 
 ```text
 psycopg2.errors.SyntaxError: syntax error at or near "WHERE"
@@ -194,4 +201,6 @@ python chaos/chaos_b_unique_together.py  # expect IntegrityError, then fix verif
 bash chaos/run_all.sh
 ```
 
-Inspect `chaos/artifacts/*.log` and paste fresh traces into this file when re-running.
+Fresh local runs write to gitignored `chaos/artifacts/`. The submission ZIP
+includes the sanitized evidence under `docs/proof/` — compare new traces against
+those files when re-running.

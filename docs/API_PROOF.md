@@ -1,77 +1,83 @@
 # API Proof — Screenshots & Terminal Recordings
 
-Use this checklist to generate visual evidence for evaluators.
+Visual evidence for evaluators. All committed screenshots use the numbered naming
+scheme in `docs/proof/`.
 
 ---
 
-## A. Postman screenshot proofs
+## Proof gallery (committed)
 
-1. Import `events_platform.postman_collection.json` into Postman.
-2. Set collection variable `baseUrl` = `http://127.0.0.1:8000`.
-3. Start the server (`python manage.py runserver`) with console email backend.
+### 01 — Auth flow (Signup → Verify OTP → Login)
 
-### Shot 1 — Auth flow (Signup → Console OTP → Verify → Login)
+Seeker signup returns `201` with **no OTP** in the body, verify returns `200`,
+login returns JWT `access` + `refresh`.
 
-1. **Signup (Seeker)** → capture `201` body (must **not** contain an OTP code).
-2. In the Django runserver terminal, capture the console email line containing the
-   6-digit code (this is the only allowed plaintext surface).
-3. **Verify OTP** with that code → `200`.
-4. **Login** → `200` with `access` + `refresh`. Login test script stores
-   `{{accessToken}}` automatically.
-5. Optional: attempt login **before** verify → expect
-   `{"detail":"...","code":"email_not_verified"}`.
+![01 — Auth flow](proof/01-auth-flow.png)
 
-### Shot 2 — Facilitator dashboard (`available_seats`)
+### 02 — Facilitator event + seat dashboard
 
-1. **Login (Facilitator)** (`facilitator@example.com` / `Passw0rd!` after seed).
-2. **List My Events** → screenshot JSON showing `enrollment_count` and
-   `available_seats` per event.
-3. As a seeker, enroll once; refresh facilitator list — `available_seats` must drop by 1.
+Facilitator creates an event (`201`) then lists events showing
+`enrollment_count` and `available_seats` after seeker enrollments.
 
-### Shot 3 — Standardized capacity error
+![02 — Facilitator event + available_seats](proof/02-facilitator-event.png)
 
-1. Use seeded event **“PostgreSQL Concurrency Deep Dive”** (`capacity=1`) or create
-   one with `capacity: 1`.
-2. Enroll seeker1 successfully.
-3. Login as seeker2 and **Enroll** again → capture `400`:
+### 03 — Event search & filtering
+
+Search by `q`, `location`, and `language` returns the matching Kubernetes workshop.
+
+![03 — Event search filtering](proof/03-event-search.png)
+
+### 04 — Enrollment capacity enforcement
+
+Create `capacity=1` event, then second seeker receives standardized `400`:
 
 ```json
 {"detail": "Event capacity full.", "code": "capacity_full"}
 ```
 
-### Shot 4 — Cancel → Re-enroll
+![04 — Enrollment capacity](proof/04-enrollment-capacity.png)
 
-1. Seeker enrolls → `201` `ENROLLED`.
-2. **Cancel Enrollment** → `200` `CANCELLED`.
-3. **Re-enroll** → `201` new enrollment id (not an IntegrityError).
+### 05 — Cancel → Re-enroll lifecycle
+
+Enroll (`201` `ENROLLED`) → Cancel (`200` `CANCELLED`) → Re-enroll (`201` new id).
+
+![05 — Re-enrollment lifecycle](proof/05-reenrollment.png)
+
+### 06 — Test suite
+
+```bash
+python manage.py test accounts.tests events.tests -v 2
+```
+
+![06 — 31 tests OK](proof/06-test-suite.png)
 
 ---
 
-## B. CLI test recording (asciinema)
+## How to reproduce (Postman)
+
+1. Import `events_platform.postman_collection.json` into Postman.
+2. Set collection variable `baseUrl` = `http://127.0.0.1:8000`.
+3. Start the server (`python manage.py runserver`) with console email backend.
+4. Run requests in collection order; capture screenshots matching `01`–`06` above.
+
+---
+
+## CLI test recording (asciinema)
 
 ```bash
 cd events-platform
 source .venv/bin/activate
 mkdir -p docs/proof
 
-# Record
 asciinema rec docs/proof/test_suite.cast \
   -c "python manage.py test accounts.tests events.tests -v 2"
 
-# Optional upload / GIF conversion
-# asciinema upload docs/proof/test_suite.cast
-# agg docs/proof/test_suite.cast docs/proof/test_suite.gif
-```
-
-Capture a second cast for chaos:
-
-```bash
 asciinema rec docs/proof/chaos.cast -c "bash chaos/run_all.sh"
 ```
 
 ---
 
-## C. VHS tape (GIF)
+## VHS tape (GIF)
 
 Install [vhs](https://github.com/charmbracelet/vhs), then:
 
@@ -79,22 +85,9 @@ Install [vhs](https://github.com/charmbracelet/vhs), then:
 vhs docs/proof/tests.tape
 ```
 
-`docs/proof/tests.tape` contents:
-
-```tape
-Output docs/proof/tests.gif
-Set Shell bash
-Set FontSize 14
-Set Width 1200
-Set Height 800
-Type "source .venv/bin/activate && python manage.py test accounts.tests events.tests -v 2"
-Enter
-Sleep 45s
-```
-
 ---
 
-## D. OpenAPI schema snapshot
+## OpenAPI schema snapshot
 
 ```bash
 python manage.py spectacular --file docs/openapi.yaml
@@ -103,17 +96,23 @@ python manage.py spectacular --file docs/openapi.yaml
 
 ---
 
-## Evidence folder layout (recommended)
+## Evidence folder layout
 
 ```text
 docs/proof/
-  auth_signup.png
-  auth_console_otp.png
-  auth_verify_login.png
-  facilitator_seats.png
-  capacity_full_400.png
-  reenroll_success.png
-  test_suite.cast
-  tests.gif
-  chaos.cast
+  01-auth-flow.png                 # signup → verify → login
+  02-facilitator-event.png         # create event + seat dashboard
+  03-event-search.png              # search filtering
+  04-enrollment-capacity.png       # capacity=1 + capacity_full error
+  05-reenrollment.png              # enroll → cancel → re-enroll
+  06-test-suite.png                # 31 tests OK
+  chaos_a_overbooking.log          # Chaos A overbooking
+  chaos_b_unique_together.log      # Chaos B IntegrityError + fix
+  partial_unique_syntax_error.log  # invalid ALTER … WHERE
+  tests.tape
+  test_suite.cast                  # optional asciinema
+  tests.gif                        # optional vhs GIF
+  chaos.cast                       # optional chaos recording
 ```
+
+Committed chaos logs and numbered screenshots ship with the repo/ZIP.

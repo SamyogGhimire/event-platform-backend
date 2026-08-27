@@ -1,7 +1,9 @@
 # Chaos Experiment Playbook — Break the System Yourself
 
 Run these **before** trusting the production path. Capture terminal output into
-`DEBUGGING.md` (already seeded from our live runs under `chaos/artifacts/`).
+`DEBUGGING.md`. Committed evidence from our live runs is under
+[`docs/proof/`](../docs/proof/) (ZIP-safe). Local re-runs still write to
+gitignored `chaos/artifacts/`.
 
 ## Prerequisites
 
@@ -78,3 +80,5 @@ Then re-run the full suite:
 ```bash
 python manage.py test accounts.tests events.tests -v 2
 ```
+
+![06 — Test suite after chaos experiments](../docs/proof/06-test-suite.png)

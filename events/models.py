@@ -6,9 +6,9 @@ from django.db.models import Q
 class Event(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-    language = models.CharField(max_length=64, db_index=True)
-    location = models.CharField(max_length=255, db_index=True)
-    starts_at = models.DateTimeField(db_index=True)
+    language = models.CharField(max_length=64)
+    location = models.CharField(max_length=255)
+    starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
     capacity = models.PositiveIntegerField(
         null=True,

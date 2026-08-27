@@ -48,7 +48,9 @@ docs, Postman collection, and **live chaos experiments** to feed `DEBUGGING.md`.
 - Chaos A removed `select_for_update` → **5 enrollments on capacity=1**
 - Chaos B installed naive `UNIQUE(event, seeker)` → **IntegrityError** on re-enroll
 - Invalid partial-unique DDL captured → `syntax error at or near "WHERE"`
-- Artifacts stored under `chaos/artifacts/`
+- Artifacts captured under `chaos/artifacts/` during live runs, then **sanitized
+  and committed** under `docs/proof/` for ZIP submission (see Correction below
+  on gitignore)
 
 ### 4. Hardening after real failures
 
@@ -62,6 +64,15 @@ docs, Postman collection, and **live chaos experiments** to feed `DEBUGGING.md`.
 - `README.md`, `DECISIONS.md`, `DEBUGGING.md`, `PROMPT_LOG.md`
 - `docs/API_PROOF.md` (screenshot / asciinema / vhs instructions)
 - `events_platform.postman_collection.json` with JWT capture scripts
+- Committed proof screenshots in `docs/proof/01-auth-flow.png` … `06-test-suite.png`
+
+![01 — Auth flow](docs/proof/01-auth-flow.png)
+
+![04 — Enrollment capacity](docs/proof/04-enrollment-capacity.png)
+
+![05 — Re-enrollment](docs/proof/05-reenrollment.png)
+
+![06 — Test suite](docs/proof/06-test-suite.png)
 
 ---
 
@@ -143,6 +154,16 @@ Regression tests in `events/tests/test_authz.py`.
 **What was corrected:** `_parse_aware_datetime()` treats naive ISO strings as
 project-timezone-aware. Covered by `SearchTimezoneFilterTests`.
 
+### Correction 7 — Chaos evidence missing from ZIP (gitignore)
+
+**What was wrong:** `.gitignore` excluded `chaos/artifacts/` and `*.log`, so
+`DEBUGGING.md` pointed at logs that never shipped in the submission archive.
+
+**What was corrected:** Sanitized evidence copied to `docs/proof/*.log`,
+`.gitignore` allows `!docs/proof/*.log`, and `DEBUGGING.md` / `chaos/README.md`
+reference the committed paths. Local chaos re-runs still write to gitignored
+`chaos/artifacts/`.
+
 ---
 
 ## Final verification commands run
@@ -153,4 +174,5 @@ python manage.py test accounts.tests events.tests -v 2
 
 python chaos/chaos_a_concurrency.py   # overbooking reproduced
 python chaos/chaos_b_unique_together.py  # IntegrityError + fix verified
+ls docs/proof/*.log                   # committed evidence present
 ```

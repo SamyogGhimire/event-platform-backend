@@ -149,6 +149,70 @@ class EnrollmentLifecycleTests(TestCase):
             "code": "capacity_full",
         })
 
+    def test_cannot_reduce_capacity_below_active_enrollments(self):
+        # 8 active enrollments; shrinking capacity to 3 must fail.
+        self.event.capacity = 10
+        self.event.save(update_fields=["capacity"])
+        enroll_seeker(self.event.pk, self.seeker)
+        for i in range(7):
+            u = User.objects.create_user(
+                username=f"cap{i}@example.com",
+                email=f"cap{i}@example.com",
+                password="Passw0rd!",
+            )
+            Profile.objects.create(
+                user=u, role=Role.SEEKER, is_email_verified=True
+            )
+            enroll_seeker(self.event.pk, u)
+
+        self.client.force_authenticate(user=self.facilitator)
+        resp = self.client.patch(
+            f"/api/facilitator/events/{self.event.pk}/",
+            {"capacity": 3},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.data,
+            {
+                "detail": "Capacity cannot be lower than current active enrollments.",
+                "code": "capacity_below_enrollment_count",
+            },
+        )
+
+    def test_unlimited_capacity_enroll_and_available_seats_null(self):
+        self.event.capacity = None
+        self.event.save(update_fields=["capacity"])
+        self.client.force_authenticate(user=self.seeker)
+        enroll = self.client.post(f"/api/events/{self.event.pk}/enroll/")
+        self.assertEqual(enroll.status_code, status.HTTP_201_CREATED)
+
+        detail = self.client.get(f"/api/events/{self.event.pk}/")
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertIsNone(detail.data["available_seats"])
+        self.assertEqual(detail.data["enrollment_count"], 1)
+        self.assertIsNone(detail.data["capacity"])
+
+    def test_invalid_event_dates_ends_before_starts(self):
+        self.client.force_authenticate(user=self.facilitator)
+        now = timezone.now()
+        resp = self.client.post(
+            "/api/facilitator/events/",
+            {
+                "title": "Bad Dates",
+                "description": "ends before starts",
+                "language": "English",
+                "location": "Remote",
+                "starts_at": (now + timedelta(days=2)).isoformat(),
+                "ends_at": (now + timedelta(days=1)).isoformat(),
+                "capacity": 5,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", resp.data)
+        self.assertIn("code", resp.data)
+
     def test_facilitator_list_includes_seat_counts(self):
         enroll_seeker(self.event.pk, self.seeker)
         self.client.force_authenticate(user=self.facilitator)

@@ -33,6 +33,8 @@ Use **`transaction.atomic()` + `Event.objects.select_for_update()`** in
 - Throughput is serialized per event row — acceptable for workshop-scale capacity.
 - Chaos A (`chaos/chaos_a_concurrency.py`) documents the failure mode without the lock.
 
+![Re-enrollment lifecycle — enroll, cancel, re-enroll with new id](docs/proof/05-reenrollment.png)
+
 ---
 
 ## ADR-2 — Partial unique constraint for re-enrollment lifecycle
@@ -72,6 +74,8 @@ row. Prior cancellations remain queryable.
 - Manual DDL must use `CREATE UNIQUE INDEX … WHERE`, not
   `ALTER TABLE … UNIQUE … WHERE` (see DEBUGGING.md Issue 2).
 
+![Facilitator event + available_seats dashboard](docs/proof/02-facilitator-event.png)
+
 ---
 
 ## ADR-3 — OTP single-active invalidation policy
@@ -109,6 +113,8 @@ On every `create_and_send_otp`:
 - Logs contain `otp_id` / `user_id` / attempt counts — never the code.
 - Covered by `accounts/tests/test_otp.py` (TTL, cooldown, attempts, invalidation,
   signup→verify→login).
+
+![Auth flow — signup, verify OTP, login JWT](docs/proof/01-auth-flow.png)
 
 ---
 

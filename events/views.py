@@ -73,9 +73,9 @@ class FacilitatorEventDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Event.objects.none()
-        return annotate_seat_counts(
-            Event.objects.filter(created_by=self.request.user)
-        )
+        # Do not filter by owner here — IsEventOwner returns 403 for non-owners
+        # (owner-scoped queryset would hide the object as 404).
+        return annotate_seat_counts(Event.objects.all())
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):

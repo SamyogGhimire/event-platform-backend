@@ -1,0 +1,35 @@
+ProgrammingError('syntax error at or near "WHERE"\nLINE 5:             WHERE (status = \'ENROLLED\')\n                    ^\n')
+
+Traceback (most recent call last):
+  File "<venv>/django/db/backends/utils.py", line 103, in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.SyntaxError: syntax error at or near "WHERE"
+LINE 5:             WHERE (status = 'ENROLLED')
+                    ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 10, in <module>
+  File "<venv>/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<venv>/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<venv>/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<venv>/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "<venv>/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "<venv>/django/db/backends/utils.py", line 103, in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: syntax error at or near "WHERE"
+LINE 5:             WHERE (status = 'ENROLLED')
+                    ^
+

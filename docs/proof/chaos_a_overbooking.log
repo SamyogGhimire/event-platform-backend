@@ -1,0 +1,17 @@
+========================================================================
+CHAOS EXPERIMENT A — Concurrency Overbooking (NO select_for_update)
+========================================================================
+Created event id=7 capacity=1
+[THREAD OK] seeker_id=8 enrollment_id=12
+[THREAD OK] seeker_id=10 enrollment_id=13
+[THREAD OK] seeker_id=11 enrollment_id=15
+[THREAD OK] seeker_id=12 enrollment_id=14
+[THREAD OK] seeker_id=9 enrollment_id=16
+------------------------------------------------------------------------
+FINAL active ENROLLED count = 5 (capacity was 1)
+Thread successes = 5, failures = 0
+*** OVERBOOKING CONFIRMED — race condition reproduced ***
+Root cause: check-then-act without row lock allowed concurrent inserts.
+Fix: Event.objects.select_for_update() inside transaction.atomic().
+Full log: docs/proof/chaos_a_overbooking.log
+========================================================================

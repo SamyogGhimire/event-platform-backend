@@ -100,6 +100,37 @@ class AuthorizationErrorCodeTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(resp.data["code"], "not_authenticated")
 
+    def test_facilitator_cannot_edit_another_facilitators_event(self):
+        other_fac = User.objects.create_user(
+            username="other_fac_authz@example.com",
+            email="other_fac_authz@example.com",
+            password="Passw0rd!",
+        )
+        Profile.objects.create(
+            user=other_fac,
+            role=Role.FACILITATOR,
+            is_email_verified=True,
+        )
+        foreign = Event.objects.create(
+            title="Foreign Event",
+            description="owned by other facilitator",
+            language="English",
+            location="Remote",
+            starts_at=timezone.now() + timedelta(days=3),
+            ends_at=timezone.now() + timedelta(days=3, hours=1),
+            capacity=5,
+            created_by=other_fac,
+        )
+        self.client.force_authenticate(user=self.facilitator)
+        resp = self.client.patch(
+            f"/api/facilitator/events/{foreign.pk}/",
+            {"title": "Stolen"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.data["code"], "not_event_owner")
+        self.assertIn("detail", resp.data)
+
 
 class SearchTimezoneFilterTests(TestCase):
     def setUp(self):

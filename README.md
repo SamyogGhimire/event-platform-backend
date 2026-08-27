@@ -106,6 +106,17 @@ Import **`events_platform.postman_collection.json`** for scripted JWT flows.
 
 ## Tests
 
+The suite currently contains **31 automated tests** covering:
+
+- OTP security and lifecycle
+- authentication
+- authorization
+- timezone-aware search
+- concurrency
+- enrollment lifecycle
+- database constraints
+- standardized API errors (400 / 401 / 403 / 404 contract)
+
 ```bash
 source .venv/bin/activate
 python manage.py test accounts.tests events.tests -v 2
@@ -117,6 +128,7 @@ python manage.py test accounts.tests events.tests -v 2
 | `events/tests/test_concurrency.py` | Parallel enroll never exceeds capacity |
 | `events/tests/test_lifecycle.py` | Cancel → re-enroll, partial unique, API errors |
 | `events/tests/test_authz.py` | Role denial codes, unverified access, timezone-aware search |
+| `events/tests/test_error_contract.py` | 400/401/403/404 always return `{detail, code}` only |
 
 Standardized errors use `{"detail": "...", "code": "..."}` on validation,
 OTP, capacity, and permission failures (e.g. `facilitator_required`,
@@ -126,7 +138,7 @@ OTP, capacity, and permission failures (e.g. `facilitator_required`,
 
 ## Live chaos experiments (break → observe → fix)
 
-See **`DEBUGGING.md`** for captured traces. To reproduce yourself:
+See **`DEBUGGING.md`** and committed logs under **`docs/proof/`**. To reproduce:
 
 ```bash
 # Experiment A — remove locking mentally (script already uses unlocked path)
@@ -139,13 +151,37 @@ python chaos/chaos_b_unique_together.py
 ```
 
 Production code already contains the fixes; chaos scripts temporarily violate them
-for demonstration.
+for demonstration. Fresh local runs write to gitignored `chaos/artifacts/`; the
+submission includes sanitized copies in `docs/proof/`.
 
 ---
 
 ## Visual proof (screenshots / terminal recordings)
 
 Step-by-step instructions: **[`docs/API_PROOF.md`](docs/API_PROOF.md)**.
+
+Committed proof screenshots in **`docs/proof/`**:
+
+| # | File | What it shows |
+|---|---|---|
+| 01 | [`01-auth-flow.png`](docs/proof/01-auth-flow.png) | Signup → verify OTP → login (JWT) |
+| 02 | [`02-facilitator-event.png`](docs/proof/02-facilitator-event.png) | Facilitator create event + `available_seats` |
+| 03 | [`03-event-search.png`](docs/proof/03-event-search.png) | Search by `q`, `location`, `language` |
+| 04 | [`04-enrollment-capacity.png`](docs/proof/04-enrollment-capacity.png) | `capacity=1` + `capacity_full` error |
+| 05 | [`05-reenrollment.png`](docs/proof/05-reenrollment.png) | Enroll → cancel → re-enroll (new id) |
+| 06 | [`06-test-suite.png`](docs/proof/06-test-suite.png) | 31 automated tests pass |
+
+![Auth flow proof](docs/proof/01-auth-flow.png)
+
+![Facilitator event proof](docs/proof/02-facilitator-event.png)
+
+![Event search proof](docs/proof/03-event-search.png)
+
+![Enrollment capacity proof](docs/proof/04-enrollment-capacity.png)
+
+![Re-enrollment proof](docs/proof/05-reenrollment.png)
+
+![Test suite proof](docs/proof/06-test-suite.png)
 
 Quick recording of the test suite:
 
@@ -186,4 +222,6 @@ vhs docs/proof/tests.tape
 | `DEBUGGING.md` | Real chaos failures + fixes |
 | `PROMPT_LOG.md` | AI interaction log + corrections |
 | `docs/API_PROOF.md` | Screenshot / GIF capture guide |
-| `chaos/` | Break-and-fix scripts + artifacts |
+| `docs/proof/*.log` | Committed chaos evidence (ZIP-safe) |
+| `docs/proof/*.png` | Committed proof screenshots (`01`–`06`) |
+| `chaos/` | Break-and-fix scripts (local artifacts gitignored) |

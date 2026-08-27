@@ -2,6 +2,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from config.exceptions import APIError
 from events.models import Enrollment, Event
 
 
@@ -55,6 +56,23 @@ class EventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"capacity": "capacity must be >= 1 when provided."}
             )
+
+        # Cannot shrink capacity below current active enrollments
+        if (
+            self.instance is not None
+            and "capacity" in attrs
+            and attrs["capacity"] is not None
+        ):
+            active = self.instance.enrollments.filter(
+                status=Enrollment.Status.ENROLLED
+            ).count()
+            if attrs["capacity"] < active:
+                raise APIError(
+                    detail=(
+                        "Capacity cannot be lower than current active enrollments."
+                    ),
+                    code="capacity_below_enrollment_count",
+                )
         return attrs
 
 

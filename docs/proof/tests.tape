@@ -6,3 +6,4 @@ Set Height 800
 Type "source .venv/bin/activate && python manage.py test accounts.tests events.tests -v 2"
 Enter
 Sleep 45s
+743447

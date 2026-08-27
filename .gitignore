@@ -10,9 +10,11 @@ media/
 staticfiles/
 .DS_Store
 *.log
+!docs/proof/*.log
 .coverage
 htmlcov/
 .mypy_cache/
+# Local re-run output only — committed evidence lives in docs/proof/
 chaos/artifacts/
 *.cast
 *.gif
