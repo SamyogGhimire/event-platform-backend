@@ -48,12 +48,101 @@ python manage.py runserver
 
 Seeded users are **already email-verified**.
 
-### Optional: full Docker stack
+---
+
+## Docker
+
+The API ships as a production image with gunicorn, automatic migrations, and
+optional demo seeding on startup.
+
+**Docker Hub:** [`samyogg/events-platform`](https://hub.docker.com/r/samyogg/events-platform)
 
 ```bash
-docker compose up --build
-# API → http://127.0.0.1:8000
+docker pull samyogg/events-platform:latest
 ```
+
+### Option A — full stack (recommended)
+
+Runs PostgreSQL + API together:
+
+```bash
+cd events-platform
+cp .env.docker.example .env   # docker-specific Postgres host (db)
+docker compose up --build
+```
+
+| Service | URL |
+|---|---|
+| API | http://127.0.0.1:8000 |
+| Swagger UI | http://127.0.0.1:8000/api/docs/ |
+| OpenAPI schema | http://127.0.0.1:8000/api/schema/ |
+
+Stop: `docker compose down`
+Reset DB volume: `docker compose down -v`
+
+If ports **8000** or **5433** are already in use locally, stop the conflicting
+process/container first (e.g. a local `runserver` or standalone `events-pg`).
+
+### Option B — build the image only
+
+```bash
+docker build -t events-platform:latest .
+```
+
+### Option C — run from Docker Hub
+
+Pull the published image and connect to Postgres on the host:
+
+```bash
+docker pull samyogg/events-platform:latest
+
+docker run --rm -p 8000:8000 \
+  -e POSTGRES_HOST=host.docker.internal \
+  -e POSTGRES_PORT=5433 \
+  -e POSTGRES_DB=events_platform \
+  -e POSTGRES_USER=events \
+  -e POSTGRES_PASSWORD=events \
+  -e DJANGO_SECRET_KEY=change-me-to-a-long-random-string-at-least-32-chars \
+  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
+  --add-host=host.docker.internal:host-gateway \
+  samyogg/events-platform:latest
+```
+
+### Option D — run a locally built image against existing Postgres
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e POSTGRES_HOST=host.docker.internal \
+  -e POSTGRES_PORT=5433 \
+  -e POSTGRES_DB=events_platform \
+  -e POSTGRES_USER=events \
+  -e POSTGRES_PASSWORD=events \
+  -e DJANGO_SECRET_KEY=change-me-to-a-long-random-string-at-least-32-chars \
+  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
+  --add-host=host.docker.internal:host-gateway \
+  events-platform:latest
+```
+
+On Linux, `host.docker.internal` reaches Postgres on the host (e.g. port 5433).
+
+### Container startup behavior
+
+The image entrypoint (`docker/entrypoint.sh`) runs:
+
+1. `python manage.py migrate --noinput`
+2. `python manage.py seed_demo` (when `SEED_DEMO=true`)
+3. `gunicorn` with 2 workers (override via `GUNICORN_WORKERS`)
+
+Useful env vars (see `.env.docker.example`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SEED_DEMO` | `true` | Seed demo users/events on container start |
+| `GUNICORN_WORKERS` | `2` | Gunicorn worker processes |
+| `GUNICORN_TIMEOUT` | `60` | Worker timeout (seconds) |
+| `POSTGRES_HOST` | `127.0.0.1` | Database host (`db` inside compose) |
+
+Healthcheck: container probes `GET /api/docs/` every 30s.
 
 ---
 
@@ -215,3 +304,6 @@ Committed proof screenshots in **`docs/proof/`**:
 | `docs/proof/*.log` | Committed chaos evidence (ZIP-safe) |
 | `docs/proof/*.png` | Committed proof screenshots (`01`–`06`) |
 | `chaos/` | Break-and-fix scripts (local artifacts gitignored) |
+| `Dockerfile` | API image build (`events-platform:latest`) |
+| `docker-compose.yml` | Postgres + API stack |
+| `.env.docker.example` | Env template for Docker Compose |
