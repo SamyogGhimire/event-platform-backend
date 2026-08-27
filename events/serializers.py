@@ -1,4 +1,5 @@
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from events.models import Enrollment, Event
@@ -29,11 +30,13 @@ class EventSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_by", "created_at", "updated_at")
 
+    @extend_schema_field(serializers.IntegerField())
     def get_enrollment_count(self, obj):
         if hasattr(obj, "_enrollment_count"):
             return obj._enrollment_count
         return obj.enrollment_count
 
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_available_seats(self, obj):
         if obj.capacity is None:
             return None
@@ -110,5 +113,6 @@ class EnrollmentListSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    @extend_schema_field(serializers.BooleanField())
     def get_is_upcoming(self, obj):
         return obj.event.starts_at >= timezone.now()

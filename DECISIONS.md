@@ -132,3 +132,24 @@ Facilitator. Public API must not accept `username`.
 - Compatible with SimpleJWT out of the box.
 - Admin / createsuperuser still work with username under the hood.
 - API rejects bodies that include `username` with `username_not_allowed`.
+
+---
+
+## ADR-5 — Permission denial codes in standardized errors
+
+### Context
+
+Custom `BasePermission` subclasses define machine-readable `code` values
+(`facilitator_required`, `seeker_required`, `email_not_verified`). DRF raises
+`PermissionDenied` with that code on `ErrorDetail`, but our exception handler
+preferred `exc.default_code` (`permission_denied`), wiping the specific code.
+
+### Decision
+
+In `config.exceptions.standard_exception_handler`, prefer
+`exc.detail.code` over `exc.default_code` for non-`APIError` exceptions.
+
+### Consequences
+
+- Authz failures return stable, assignment-aligned `{detail, code}` pairs.
+- Verified by `events/tests/test_authz.py`.

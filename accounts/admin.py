@@ -1,11 +1,6 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 from accounts.models import EmailOTP, Profile
-
-User = get_user_model()
 
 
 @admin.register(Profile)
@@ -29,15 +24,3 @@ class EmailOTPAdmin(admin.ModelAdmin):
     list_filter = ("is_used", "is_revoked")
     readonly_fields = ("code_hash", "created_at")
     search_fields = ("user__email",)
-
-
-@receiver(post_save, sender=User)
-def ensure_profile_exists(sender, instance, created, **kwargs):
-    """
-    Safety net: admin-created users get a default Seeker profile if missing.
-    Signup path creates Profile explicitly; this only covers edge cases.
-    """
-    if created and not hasattr(instance, "profile"):
-        # Avoid circular import issues / role ambiguity for superusers —
-        # only auto-create when profile truly missing and not already handled.
-        pass

@@ -126,13 +126,30 @@ ALTER TABLE ... ADD CONSTRAINT ... UNIQUE (event_id, seeker_id) WHERE (...);
 **Reality:** `syntax error at or near "WHERE"`. Django emits a **unique index**.
 Restore scripts now use `CREATE UNIQUE INDEX … WHERE`.
 
+### Correction 5 — Audit: permission codes swallowed as `permission_denied`
+
+**What the audit found:** `IsFacilitator` / `IsSeeker` / `IsEmailVerified` set
+`code = "facilitator_required"` etc., but `standard_exception_handler` preferred
+`PermissionDenied.default_code` (`permission_denied`).
+
+**What was corrected:** Prefer `ErrorDetail.code` from the exception detail.
+Regression tests in `events/tests/test_authz.py`.
+
+### Correction 6 — Audit: naive `starts_after` / `starts_before`
+
+**What the audit found:** `parse_datetime()` without `make_aware` under
+`USE_TZ=True` produced `RuntimeWarning` and unreliable filters.
+
+**What was corrected:** `_parse_aware_datetime()` treats naive ISO strings as
+project-timezone-aware. Covered by `SearchTimezoneFilterTests`.
+
 ---
 
 ## Final verification commands run
 
 ```bash
 python manage.py test accounts.tests events.tests -v 2
-# Ran 17 tests … OK
+# OTP + lifecycle + concurrency + authz/timezone … OK
 
 python chaos/chaos_a_concurrency.py   # overbooking reproduced
 python chaos/chaos_b_unique_together.py  # IntegrityError + fix verified

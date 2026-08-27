@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +15,11 @@ from accounts.serializers import (
 class SignupView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        request=SignupSerializer,
+        responses={201: dict},
+        description="Register with email, password, and role. Do not send username.",
+    )
     def post(self, request):
         # Reject username if a client tries to sneak it in
         if "username" in request.data:
@@ -40,6 +46,7 @@ class SignupView(APIView):
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(request=VerifyOTPSerializer, responses={200: dict})
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -53,6 +60,7 @@ class VerifyOTPView(APIView):
 class ResendOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(request=ResendOTPSerializer, responses={200: dict})
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -66,6 +74,11 @@ class ResendOTPView(APIView):
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        request=LoginSerializer,
+        responses={200: dict},
+        description="Verified email + password → access and refresh JWTs.",
+    )
     def post(self, request):
         if "username" in request.data:
             return Response(
@@ -81,5 +94,6 @@ class LoginView(APIView):
 
 
 class MeView(APIView):
+    @extend_schema(responses={200: ProfileSerializer})
     def get(self, request):
         return Response(ProfileSerializer(request.user.profile).data)

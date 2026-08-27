@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +16,19 @@ from events.serializers import (
     EventWriteSerializer,
 )
 from events.services import annotate_seat_counts, cancel_enrollment, enroll_seeker
+
+
+def _parse_aware_datetime(value: str, *, field_name: str):
+    """Parse ISO-8601 query datetimes as timezone-aware (UTC if naive)."""
+    dt = parse_datetime(value)
+    if dt is None:
+        raise APIError(
+            detail=f"Invalid {field_name} datetime. Use ISO-8601.",
+            code=f"invalid_{field_name}",
+        )
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return dt
 
 
 class IsEventOwner(permissions.BasePermission):
@@ -32,6 +46,8 @@ class FacilitatorEventListCreateView(generics.ListCreateAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Event.objects.none()
         qs = Event.objects.filter(created_by=self.request.user)
         return annotate_seat_counts(qs).order_by("starts_at")
 
@@ -55,6 +71,8 @@ class FacilitatorEventDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Event.objects.none()
         return annotate_seat_counts(
             Event.objects.filter(created_by=self.request.user)
         )
@@ -75,7 +93,25 @@ class EventSearchView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsEmailVerified]
     serializer_class = EventSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, description="Search title/description"),
+            OpenApiParameter("location", str),
+            OpenApiParameter("language", str),
+            OpenApiParameter(
+                "starts_after",
+                str,
+                description="ISO-8601 datetime (naive values treated as project TZ/UTC)",
+            ),
+            OpenApiParameter("starts_before", str, description="ISO-8601 datetime"),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Event.objects.none()
         qs = annotate_seat_counts(Event.objects.all())
         params = self.request.query_params
 
@@ -93,23 +129,19 @@ class EventSearchView(generics.ListAPIView):
 
         starts_after = params.get("starts_after")
         if starts_after:
-            dt = parse_datetime(starts_after)
-            if dt is None:
-                raise APIError(
-                    detail="Invalid starts_after datetime. Use ISO-8601.",
-                    code="invalid_starts_after",
+            qs = qs.filter(
+                starts_at__gte=_parse_aware_datetime(
+                    starts_after, field_name="starts_after"
                 )
-            qs = qs.filter(starts_at__gte=dt)
+            )
 
         starts_before = params.get("starts_before")
         if starts_before:
-            dt = parse_datetime(starts_before)
-            if dt is None:
-                raise APIError(
-                    detail="Invalid starts_before datetime. Use ISO-8601.",
-                    code="invalid_starts_before",
+            qs = qs.filter(
+                starts_at__lte=_parse_aware_datetime(
+                    starts_before, field_name="starts_before"
                 )
-            qs = qs.filter(starts_at__lte=dt)
+            )
 
         return qs.order_by("starts_at")
 
@@ -126,6 +158,11 @@ class EventDetailView(generics.RetrieveAPIView):
 class EnrollView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsEmailVerified, IsSeeker]
 
+    @extend_schema(
+        request=None,
+        responses={201: EnrollmentSerializer},
+        description="Enroll the authenticated seeker into an event (concurrency-safe).",
+    )
     def post(self, request, event_id):
         enrollment = enroll_seeker(event_id, request.user)
         return Response(
@@ -137,6 +174,11 @@ class EnrollView(APIView):
 class CancelEnrollmentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsEmailVerified, IsSeeker]
 
+    @extend_schema(
+        request=None,
+        responses={200: EnrollmentSerializer},
+        description="Cancel the seeker's active enrollment (row kept as CANCELLED audit).",
+    )
     def post(self, request, event_id):
         enrollment = cancel_enrollment(event_id, request.user)
         return Response(
@@ -156,6 +198,8 @@ class MyEnrollmentsView(generics.ListAPIView):
     serializer_class = EnrollmentListSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Enrollment.objects.none()
         qs = Enrollment.objects.filter(seeker=self.request.user).select_related("event")
         scope = self.request.query_params.get("scope", "all")
         now = timezone.now()

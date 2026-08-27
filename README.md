@@ -116,6 +116,11 @@ python manage.py test accounts.tests events.tests -v 2
 | `accounts/tests/test_otp.py` | Hashing, TTL, cooldown, attempts, invalidation, auth flow |
 | `events/tests/test_concurrency.py` | Parallel enroll never exceeds capacity |
 | `events/tests/test_lifecycle.py` | Cancel → re-enroll, partial unique, API errors |
+| `events/tests/test_authz.py` | Role denial codes, unverified access, timezone-aware search |
+
+Standardized errors use `{"detail": "...", "code": "..."}` on validation,
+OTP, capacity, and permission failures (e.g. `facilitator_required`,
+`seeker_required`, `email_not_verified`, `capacity_full`).
 
 ---
 

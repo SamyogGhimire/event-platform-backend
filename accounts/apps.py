@@ -6,5 +6,5 @@ class AccountsConfig(AppConfig):
     name = "accounts"
 
     def ready(self):
-        # Import admin registrations / signal hooks
+        # Import admin registrations
         from accounts import admin  # noqa: F401

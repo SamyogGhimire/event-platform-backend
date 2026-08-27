@@ -63,10 +63,11 @@ def standard_exception_handler(exc, context):
         response.data = {"detail": detail, "code": code}
         return response
 
-    # Auth / permission / not-found style exceptions
+    # Auth / permission / not-found style exceptions.
+    # Prefer ErrorDetail.code (e.g. facilitator_required from BasePermission.code)
+    # over APIException.default_code (e.g. permission_denied).
     detail = response.data.get("detail", str(exc)) if isinstance(response.data, dict) else str(exc)
-    code = getattr(exc, "default_code", None) or getattr(getattr(exc, "detail", None), "code", None)
-    if not code:
-        code = "error"
+    detail_code = getattr(getattr(exc, "detail", None), "code", None)
+    code = detail_code or getattr(exc, "default_code", None) or "error"
     response.data = {"detail": str(detail), "code": str(code)}
     return response

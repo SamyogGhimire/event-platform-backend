@@ -141,6 +141,17 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Events Platform API",
     "DESCRIPTION": "Production-ready Events Platform backend (DRF + SimpleJWT).",
     "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SECURITY": [{"bearerAuth": []}],
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
 }
 
 # ---------------------------------------------------------------------------
